@@ -37,5 +37,36 @@ public final class Yuv {
         }
         return out;
     }
+
+    public static int[] rotate(int[] src, int w, int h, int rotation){
+        if (rotation % 360 == 0) return src;
+        int[] dst = new int[src.length];
+        switch(rotation){
+            case 90:
+                for (int y=0;y<h;y++){
+                    for (int x=0;x<w;x++){
+                        dst[x*h + (h-1-y)] = src[y*w + x];
+                    }
+                }
+                break;
+            case 180:
+                for (int y=0;y<h;y++){
+                    for (int x=0;x<w;x++){
+                        dst[(h-1-y)*w + (w-1-x)] = src[y*w + x];
+                    }
+                }
+                break;
+            case 270:
+                for (int y=0;y<h;y++){
+                    for (int x=0;x<w;x++){
+                        dst[(w-1-x)*h + y] = src[y*w + x];
+                    }
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported rotation: " + rotation);
+        }
+        return dst;
+    }
     private static int clamp(int v){ return v<0?0:(v>255?255:v); }
 }
