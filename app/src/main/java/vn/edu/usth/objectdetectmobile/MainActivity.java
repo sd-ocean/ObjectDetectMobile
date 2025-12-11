@@ -57,6 +57,9 @@ import android.os.Build;
 import android.content.Context;
 import android.content.IntentFilter;
 
+//TODO: fix bug after download model from internet (for case lack of indoor model at the beginning), it
+// dont use model indoor after download immediately, i need to switch outdoor mode then comeback indoor mode,
+// model indoor is activate
 
 public class MainActivity extends ComponentActivity {
     // ---------------------------------------------------------------------------------------------
@@ -126,7 +129,7 @@ public class MainActivity extends ComponentActivity {
     //  Core components
     // ---------------------------------------------------------------------------------------------
     private ObjectDetector detector;
-    private DepthEstimator depthEstimator;
+    private volatile DepthEstimator depthEstimator;     //Marking the field volatile guarantees visibility of the latest reference across threads
     private StereoDepthProcessor stereoProcessor;
     private ProcessCameraProvider cameraProvider;
     private Camera currentCamera;
@@ -170,6 +173,7 @@ public class MainActivity extends ComponentActivity {
     private volatile float zoomMinRatio = 1f;
     private volatile float zoomMaxRatio = 1f;
     private boolean stereoSwitchInternalChange = false;
+    private boolean envSwitchInternalChange = false;
 
     // ---------------------------------------------------------------------------------------------
     //  Lifecycle & entry point
@@ -379,26 +383,46 @@ public class MainActivity extends ComponentActivity {
     private void initEnvironmentSwitch() {
         if (environmentSwitch == null) return;
 
-        // Sync lại trạng thái hiện tại (phòng khi initEnvMode gọi sau)
+        // Sync lại trạng thái hiện tại
         environmentSwitch.setChecked(envMode == EnvMode.OUTDOOR);
 
         environmentSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // ON = OUTDOOR, OFF = INDOOR
-            envMode = isChecked ? EnvMode.OUTDOOR : EnvMode.INDOOR;
+            if (envSwitchInternalChange) return;
 
-            // Lưu vào prefs
-            prefs.edit().putString(PREF_ENV_MODE, envMode.name()).apply();
+            // User is trying to switch to this mode
+            EnvMode targetMode = isChecked ? EnvMode.OUTDOOR : EnvMode.INDOOR;
 
-            Toast.makeText(
-                    this,
-                    "Environment: " + (envMode == EnvMode.OUTDOOR ? "Outdoor" : "Indoor"),
-                    Toast.LENGTH_SHORT
-            ).show();
+            // Nếu chưa có model cho mode này thì không cho switch, gợi ý download
+            if (!DepthEstimator.isModelAvailable(this, targetMode)) {
+                envSwitchInternalChange = true;
+                buttonView.setChecked(!isChecked);  // revert về mode cũ
+                envSwitchInternalChange = false;
 
-            // Đơn giản: reload lại detector/depth cho mode mới
-            reloadPipelinesForEnvChange();
+                showMissingDepthModelDialog(targetMode);
+                return;
+            }
+
+            // Model đã có -> switch thật sự
+            switchEnvironment(targetMode);
         });
     }
+
+    private void switchEnvironment(EnvMode newMode) {
+        envMode = newMode;
+
+        // Lưu vào prefs
+        prefs.edit().putString(PREF_ENV_MODE, envMode.name()).apply();
+
+        Toast.makeText(
+                this,
+                "Environment: " + (envMode == EnvMode.OUTDOOR ? "Outdoor" : "Indoor"),
+                Toast.LENGTH_SHORT
+        ).show();
+
+        // Reload lại detector/depth cho mode mới
+        reloadPipelinesForEnvChange();
+    }
+
 
     private void reloadPipelinesForEnvChange() {
         // Pause realtime so we don't process frames while reloading depth
@@ -411,7 +435,7 @@ public class MainActivity extends ComponentActivity {
             boolean depthModelOk = DepthEstimator.isModelAvailable(this, envMode);
             if (!depthModelOk) {
                 // No model yet -> show download dialog for this mode
-                showMissingDepthModelDialog();
+                showMissingDepthModelDialog(envMode);
 
                 // Keep depthEstimator = null, YOLO-only mode
                 depthEstimator = null;
@@ -524,7 +548,7 @@ public class MainActivity extends ComponentActivity {
         boolean depthModelOk = DepthEstimator.isModelAvailable(this, envMode);
         if (!depthModelOk) {
             // Không có model -> thông báo & gợi ý mở link download
-            showMissingDepthModelDialog();
+            showMissingDepthModelDialog(envMode);
             // Không tạo depthEstimator, app vẫn chạy YOLO-only
             depthEstimator = null;
             depthState.lastDepthMap = null;
@@ -551,10 +575,10 @@ public class MainActivity extends ComponentActivity {
         updateStereoSwitchAvailability(false);
     }
 
-    private void showMissingDepthModelDialog() {
-        String modeLabel = (envMode == EnvMode.OUTDOOR) ? "Outdoor" : "Indoor";
+    private void showMissingDepthModelDialog(EnvMode targetMode) {
+        String modeLabel = (targetMode == EnvMode.OUTDOOR) ? "Outdoor" : "Indoor";
 
-        String downloadUrl = (envMode == EnvMode.OUTDOOR)
+        String downloadUrl = (targetMode == EnvMode.OUTDOOR)
                 ? DEPTH_DOWNLOAD_OUTDOOR_URL
                 : DEPTH_DOWNLOAD_INDOOR_URL;
 
@@ -565,7 +589,7 @@ public class MainActivity extends ComponentActivity {
                                 "Do you want to download it now?"
                 )
                 .setPositiveButton("Download", (dialog, which) -> {
-                    startDepthModelDownload(downloadUrl, envMode);
+                    startDepthModelDownload(downloadUrl, targetMode);
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> {
                     Toast.makeText(this,
@@ -575,6 +599,7 @@ public class MainActivity extends ComponentActivity {
                 .setCancelable(true)
                 .show();
     }
+
 
     private void startDepthModelDownload(String url, EnvMode mode) {
         DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
@@ -657,26 +682,13 @@ public class MainActivity extends ComponentActivity {
                                 final String path = depthModelPrefs.getString(keyPath, null);
 
                                 if (path != null && new java.io.File(path).exists()) {
-                                    Log.i(TAG, "Depth model downloaded OK for mode=" + mode +
-                                            " at " + path);
+                                    Log.i(TAG, "Depth model downloaded OK for mode=" + mode + " at " + path);
 
                                     runOnUiThread(() -> {
                                         try {
                                             // Make sure envMode matches the model we just downloaded
-                                            envMode = mode;
-
-                                            // If you want the UI switch to reflect this:
-                                            if (environmentSwitch != null) {
-                                                environmentSwitch.setChecked(envMode == EnvMode.OUTDOOR);
-                                            }
-
-                                            // Create a new DepthEstimator pointing to this file
-                                            depthEstimator = new DepthEstimator(MainActivity.this, envMode);
-
-                                            synchronized (depthState) {
-                                                depthState.lastDepthMap = null;
-                                                depthState.lastDepthMillis = 0L;
-                                                depthState.lastDepthCacheTime = 0L;
+                                            if (envMode == mode) {
+                                                reloadPipelinesForEnvChange();
                                             }
 
                                             Toast.makeText(
@@ -688,12 +700,6 @@ public class MainActivity extends ComponentActivity {
 
                                         } catch (Throwable e) {
                                             Log.w(TAG, "Failed to init depth after download", e);
-                                            depthEstimator = null;
-                                            synchronized (depthState) {
-                                                depthState.lastDepthMap = null;
-                                                depthState.lastDepthMillis = 0L;
-                                                depthState.lastDepthCacheTime = 0L;
-                                            }
                                             Toast.makeText(
                                                     MainActivity.this,
                                                     "Depth model downloaded but failed to init",
