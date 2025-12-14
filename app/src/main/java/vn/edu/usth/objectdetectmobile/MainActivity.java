@@ -48,18 +48,11 @@ import ai.onnxruntime.OrtException;
 import android.content.Intent;
 import android.net.Uri;
 import androidx.appcompat.app.AlertDialog;
-
 import android.app.DownloadManager;
 import android.os.Environment;
 import android.database.Cursor;
-
 import android.os.Build;
-import android.content.Context;
 import android.content.IntentFilter;
-
-//TODO: fix bug after download model from internet (for case lack of indoor model at the beginning), it
-// dont use model indoor after download immediately, i need to switch outdoor mode then comeback indoor mode,
-// model indoor is activate
 
 public class MainActivity extends ComponentActivity {
     // ---------------------------------------------------------------------------------------------
@@ -87,9 +80,7 @@ public class MainActivity extends ComponentActivity {
     // Depth model prefs live in a separate file
     private static final String DEPTH_MODEL_PREFS = "depth_models";
     private SharedPreferences depthModelPrefs;
-
     private static final String PREF_ENV_MODE = "pref_env_mode";
-
     private EnvMode envMode = EnvMode.INDOOR;  // default = Indoor
     private SwitchMaterial environmentSwitch;
     // ---------------------------------------------------------------------------------------------
@@ -99,8 +90,8 @@ public class MainActivity extends ComponentActivity {
     private static final String TAG = "MainActivity";
 
     // Depth throttling / cache
-    private static final long DEPTH_INTERVAL_MS = 1500L;
-    private static final long DEPTH_CACHE_MS = 3000L;
+    private static final short DEPTH_INTERVAL_MS = 1500;
+    private static final short DEPTH_CACHE_MS = 3000;
 
     // Input blur
     private static final boolean ENABLE_INPUT_BLUR = true;
@@ -207,6 +198,7 @@ public class MainActivity extends ComponentActivity {
 
         initControls();
 
+        // camera permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -216,6 +208,7 @@ public class MainActivity extends ComponentActivity {
         }
     }
 
+    // react to user choice permission
     @Override
     public void onRequestPermissionsResult(int c, @NonNull String[] p, @NonNull int[] r) {
         super.onRequestPermissionsResult(c, p, r);
@@ -274,6 +267,7 @@ public class MainActivity extends ComponentActivity {
         zoomValue = findViewById(R.id.textZoomValue);
         environmentSwitch = findViewById(R.id.switchEnvironment);
 
+        //labels of object detection
         overlay.setLabels(LabelHelper.loadLabels(this, "labels.txt"));
     }
 
@@ -381,6 +375,7 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void initEnvironmentSwitch() {
+        // If the app itself changed the switch state (via setChecked()), set flag to avoid triggering the logic again
         if (environmentSwitch == null) return;
 
         // Sync lại trạng thái hiện tại
@@ -731,7 +726,7 @@ public class MainActivity extends ComponentActivity {
 
     private java.io.File getDepthModelFileForMode(EnvMode mode) {
         String fileName = (mode == EnvMode.OUTDOOR)
-                ? "depth_anything_v2_metric_vkitti_vits_fp16.onnx"
+                ? "tempDONTUSE_depth_anything_v2_metric_vkitti_vits_fp16.onnx"
                 : "depth_anything_v2_metric_hypersim_vits_fp16.onnx";
 
         java.io.File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
