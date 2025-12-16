@@ -9,6 +9,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.Size;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -106,7 +107,8 @@ public class MainActivity extends ComponentActivity {
     private SwitchMaterial blurSwitch;
     private SwitchMaterial stereoSwitch;
     private MaterialButton detectOnceButton;
-    private MaterialButton settingsButton;
+    private MaterialButton quickSettingsButton;
+    private ImageButton settingsButton;
     private MaterialButton dualShotButton;
     private MaterialButton flipCameraButton;
     private View controlPanel;
@@ -115,7 +117,6 @@ public class MainActivity extends ComponentActivity {
     private TextView calibrationValue;
     private SeekBar zoomSeek;
     private TextView zoomValue;
-
     // ---------------------------------------------------------------------------------------------
     //  Core components
     // ---------------------------------------------------------------------------------------------
@@ -257,15 +258,15 @@ public class MainActivity extends ComponentActivity {
         stereoSwitch = findViewById(R.id.switchStereo);
         detectOnceButton = findViewById(R.id.buttonDetectOnce);
         dualShotButton = findViewById(R.id.buttonDualShot);
-        settingsButton = findViewById(R.id.buttonToggleSettings);
+        quickSettingsButton = findViewById(R.id.buttonToggleSettings);
+        settingsButton = findViewById(R.id.buttonSettings);
         flipCameraButton = findViewById(R.id.buttonFlipCamera);
         controlPanel = findViewById(R.id.controlPanel);
         depthModeText = findViewById(R.id.textDepthMode);
         calibrationSeek = findViewById(R.id.seekCalibration);
         calibrationValue = findViewById(R.id.textCalibrationValue);
-        zoomSeek = findViewById(R.id.seekZoom);
-        zoomValue = findViewById(R.id.textZoomValue);
         environmentSwitch = findViewById(R.id.switchEnvironment);
+
 
         //labels of object detection
         overlay.setLabels(LabelHelper.loadLabels(this, "labels.txt"));
@@ -305,11 +306,20 @@ public class MainActivity extends ComponentActivity {
         initBlurSwitch();
         initStereoSwitch();
         initEnvironmentSwitch();
+        initQuickSettingsButton();
         initSettingsButton();
         initFlipCameraButton();
         setupCalibrationControls();
-        setupZoomControls();
         updateDepthModeLabel();
+        setupZoomControls();
+    }
+
+    private void initSettingsButton() {
+        if (settingsButton == null) return;
+        settingsButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, Settings.class);
+            startActivity(intent);
+        });
     }
 
     private void initRealtimeSwitch() {
@@ -486,14 +496,15 @@ public class MainActivity extends ComponentActivity {
 
 
 
-    private void initSettingsButton() {
-        if (settingsButton == null) {
+    private void initQuickSettingsButton() {
+        if (quickSettingsButton == null) {
             applySettingsVisibility(true);
             return;
         }
-        settingsButton.setOnClickListener(v -> toggleSettingsPanel());
+        quickSettingsButton.setOnClickListener(v -> toggleSettingsPanel());
         applySettingsVisibility(false);
     }
+
 
     private void initFlipCameraButton() {
         if (flipCameraButton == null) return;
@@ -506,16 +517,17 @@ public class MainActivity extends ComponentActivity {
         applySettingsVisibility(visible);
     }
 
+
     private void applySettingsVisibility(boolean visible) {
         if (controlPanel != null) {
             controlPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
-        if (settingsButton != null) {
-            settingsButton.setIconResource(
+        if (quickSettingsButton != null) {
+            quickSettingsButton.setIconResource(
                     visible ? android.R.drawable.ic_menu_close_clear_cancel
                             : android.R.drawable.ic_menu_manage
             );
-            settingsButton.setContentDescription(
+            quickSettingsButton.setContentDescription(
                     getString(visible ? R.string.settings_hide : R.string.settings_show)
             );
         }
