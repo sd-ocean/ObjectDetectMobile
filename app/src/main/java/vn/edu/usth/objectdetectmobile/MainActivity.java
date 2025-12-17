@@ -36,13 +36,18 @@ import androidx.camera.core.resolutionselector.ResolutionStrategy;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import vn.edu.usth.objectdetectmobile.utils.TTSWarning;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import ai.onnxruntime.OrtException;
+
+
+import android.os.Bundle;
 
 public class MainActivity extends ComponentActivity {
 
@@ -119,9 +124,14 @@ public class MainActivity extends ComponentActivity {
     private volatile float zoomMaxRatio = 1f;
     private boolean stereoSwitchInternalChange = false;
 
+
+
+    private TTSWarning tts;
+
     // ---------------------------------------------------------------------------------------------
     //  Lifecycle & entry point
     // ---------------------------------------------------------------------------------------------
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -140,6 +150,7 @@ public class MainActivity extends ComponentActivity {
         } else {
             startPipelines();
         }
+        tts = TTSWarning.getInstance(this);
     }
 
     @Override
@@ -173,6 +184,9 @@ public class MainActivity extends ComponentActivity {
         depthState.lastDepthMap = null;
         depthState.lastDepthMillis = 0L;
         depthState.lastDepthCacheTime = 0L;
+        if (tts != null) {
+            tts.shutdown();
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -494,7 +508,12 @@ public class MainActivity extends ComponentActivity {
             int finalW = frameW;
             int finalH = frameH;
             List<ObjectDetector.Detection> finalDets = dets;
-            runOnUiThread(() -> overlay.setDetections(finalDets, finalW, finalH));
+            runOnUiThread(() -> {
+                overlay.setDetections(finalDets, finalW, finalH);
+
+                // ★ THÊM GỌI TTS Ở ĐÂY ★
+                processTTSWarning(finalDets);
+            });
 
         } catch (OrtException t) {
             Log.e(TAG, "detect failed", t);
@@ -708,4 +727,49 @@ public class MainActivity extends ComponentActivity {
         bindCameraUseCases();
         updateDepthModeLabel();
     }
+    private void processTTSWarning(List<ObjectDetector.Detection> results) {
+        Log.d("TTS_DEBUG", "====================================");
+        Log.d("TTS_DEBUG", "processTTSWarning called!");
+        Log.d("TTS_DEBUG", "Results: " + (results != null ? results.size() : 0));
+        Log.d("TTS_DEBUG", "TTS: " + (tts != null ? "initialized" : "NULL"));
+
+        if (results == null || results.isEmpty() || tts == null) {
+            Log.d("TTS_DEBUG", "Skipped - results or tts is null/empty");
+            return;
+        }
+
+        List<TTSWarning.Detection> ttsDetections = new java.util.ArrayList<>();
+        List<String> labels = Arrays.asList(LabelHelper.loadLabels(this, "labels.txt"));
+
+        for (ObjectDetector.Detection det : results) {
+            
+            float depth;
+            if (Float.isNaN(det.depth) || det.depth <= 0) {
+                depth = 2.0f; // Mặc định 2 mét
+                Log.d("TTS_DEBUG", "Using default depth 2.0m (raw: " + det.depth + ")");
+            } else {
+                depth = det.depth;
+            }
+
+            // Lấy tên label
+            String label = (det.cls >= 0 && det.cls < labels.size())
+                    ? labels.get(det.cls)
+                    : "object";
+
+            Log.d("TTS_DEBUG", "Detection: " + label + " at " + depth + "m");
+
+            // Thêm vào danh sách (luôn thêm, không check depth nữa)
+            ttsDetections.add(new TTSWarning.Detection(label, depth));
+        }
+
+        if (!ttsDetections.isEmpty()) {
+            Log.d("TTS_DEBUG", "Calling TTS with " + ttsDetections.size() + " detections");
+            tts.processDetections(ttsDetections);
+        } else {
+            Log.d("TTS_DEBUG", "No valid detections to speak");
+        }
+
+        Log.d("TTS_DEBUG", "====================================");
+    }
 }
+
