@@ -8,6 +8,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
 
 public class Settings extends AppCompatActivity {
 
@@ -18,8 +20,11 @@ public class Settings extends AppCompatActivity {
 
         // 🔙 Nút quay lại
         ImageButton buttonBack = findViewById(R.id.buttonBack);
+        SwitchCompat switchBlur = findViewById(R.id.switchBlur);
+
         buttonBack.setOnClickListener(v -> finish());
 
+        /*
         // 📥 Các nút download
         ImageView iconDownload1 = findViewById(R.id.iconDownload1);
         ImageView iconDownload2 = findViewById(R.id.iconDownload2);
@@ -53,7 +58,18 @@ public class Settings extends AppCompatActivity {
             }
             // Đảo trạng thái
             isDownload[0] = !isDownload[0];
+        });*/
+
+        switchBlur.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                Toast.makeText(this, "Blur Input ON", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Blur Input OFF", Toast.LENGTH_SHORT).show();
+            }
         });
+        switchBlur.setThumbTintList(ContextCompat.getColorStateList(this, R.color.switch_thumb_color));
+        switchBlur.setTrackTintList(ContextCompat.getColorStateList(this, R.color.switch_track_color));
+
 
         /*
         iconDownload1.setOnClickListener(v ->

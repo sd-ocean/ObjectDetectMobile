@@ -107,10 +107,9 @@ public class MainActivity extends ComponentActivity {
     private SwitchMaterial blurSwitch;
     private SwitchMaterial stereoSwitch;
     private MaterialButton detectOnceButton;
-    private MaterialButton quickSettingsButton;
+    private ImageButton quickSettingsButton;
     private ImageButton settingsButton;
-    private MaterialButton dualShotButton;
-    private MaterialButton flipCameraButton;
+
     private View controlPanel;
     private TextView depthModeText;
     private SeekBar calibrationSeek;
@@ -257,10 +256,8 @@ public class MainActivity extends ComponentActivity {
         blurSwitch = findViewById(R.id.switchBlur);
         stereoSwitch = findViewById(R.id.switchStereo);
         detectOnceButton = findViewById(R.id.buttonDetectOnce);
-        dualShotButton = findViewById(R.id.buttonDualShot);
         quickSettingsButton = findViewById(R.id.buttonToggleSettings);
         settingsButton = findViewById(R.id.buttonSettings);
-        flipCameraButton = findViewById(R.id.buttonFlipCamera);
         controlPanel = findViewById(R.id.controlPanel);
         depthModeText = findViewById(R.id.textDepthMode);
         calibrationSeek = findViewById(R.id.seekCalibration);
@@ -302,13 +299,11 @@ public class MainActivity extends ComponentActivity {
     private void initControls() {
         initRealtimeSwitch();
         initDetectOnceButton();
-        initDualShotButton();
         initBlurSwitch();
         initStereoSwitch();
         initEnvironmentSwitch();
         initQuickSettingsButton();
         initSettingsButton();
-        initFlipCameraButton();
         setupCalibrationControls();
         updateDepthModeLabel();
         setupZoomControls();
@@ -344,14 +339,6 @@ public class MainActivity extends ComponentActivity {
             if (singleShotRunning) return;
             singleShotRequested = true;
             detectOnceButton.setEnabled(false);
-        });
-    }
-
-    private void initDualShotButton() {
-        if (dualShotButton == null) return;
-        dualShotButton.setOnClickListener(v -> {
-            if (sequentialStereoRunning) return;
-            handleSequentialDualShot();
         });
     }
 
@@ -505,12 +492,6 @@ public class MainActivity extends ComponentActivity {
         applySettingsVisibility(false);
     }
 
-
-    private void initFlipCameraButton() {
-        if (flipCameraButton == null) return;
-        flipCameraButton.setOnClickListener(v -> switchCameraFacing());
-    }
-
     private void toggleSettingsPanel() {
         boolean visible = controlPanel != null
                 && controlPanel.getVisibility() != View.VISIBLE;
@@ -523,9 +504,9 @@ public class MainActivity extends ComponentActivity {
             controlPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
         if (quickSettingsButton != null) {
-            quickSettingsButton.setIconResource(
-                    visible ? android.R.drawable.ic_menu_close_clear_cancel
-                            : android.R.drawable.ic_menu_manage
+            quickSettingsButton.setImageResource(
+                    visible ? R.drawable.ic_closetab
+                            : R.drawable.ic_quickset
             );
             quickSettingsButton.setContentDescription(
                     getString(visible ? R.string.settings_hide : R.string.settings_show)

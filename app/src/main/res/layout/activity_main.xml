@@ -17,75 +17,28 @@
         android:layout_height="match_parent"
         android:clickable="false"/>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/navigationBar1"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:background="#0E3A68"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/navigationBar2"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:background="#0E3A68"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
     <ImageButton
         android:id="@+id/buttonSettings"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_margin="17dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_margin="50dp"
         android:background="@android:color/transparent"
         android:backgroundTint="@android:color/white"
         android:contentDescription="settings"
         android:src="@drawable/ic_settings"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/buttonDetectOnce" />
 
 
-    <com.google.android.material.button.MaterialButton
+    <ImageButton
         android:id="@+id/buttonToggleSettings"
-        style="?attr/materialButtonOutlinedStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:padding="12dp"
-        android:text=""
-        android:minWidth="48dp"
-        android:minHeight="48dp"
-        app:icon="@android:drawable/ic_menu_manage"
-        app:backgroundTint="@android:color/white"
-        app:iconTint="@android:color/black"
-        app:iconSize="32dp"
-        app:iconGravity="textStart"
-        app:iconPadding="0dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_margin="50dp"
+        android:background="@android:color/transparent"
+        android:backgroundTint="@android:color/white"
+        android:src="@drawable/ic_quickset"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonFlipCamera"
-        style="?attr/materialButtonOutlinedStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:padding="12dp"
-        android:text=""
-        android:minWidth="48dp"
-        android:minHeight="48dp"
-        app:icon="@android:drawable/ic_menu_rotate"
-        app:backgroundTint="@android:color/white"
-        app:iconTint="@android:color/black"
-        app:iconSize="32dp"
-        app:iconGravity="textStart"
-        app:iconPadding="0dp"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <LinearLayout
@@ -189,26 +142,17 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonDetectOnce"
         style="?attr/materialButtonOutlinedStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:layout_margin="50dp"
+        android:singleLine="true"
+        android:ellipsize="none"
         android:text="@string/single_detect"
+        android:textSize="18dp"
+        android:textColor="@color/black"
+        android:backgroundTint="@color/white"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonDualShot"
-        style="?attr/materialButtonOutlinedStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="25dp"
-        android:layout_marginStart="12dp"
-        android:text="@string/dual_shot"
-        app:backgroundTint="@android:color/white"
-        app:iconTint="@android:color/black"
-        app:iconSize="32dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/buttonDetectOnce" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
