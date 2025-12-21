@@ -8,29 +8,22 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Text-to-Speech Warning System for Object Detection
- * Provides audio alerts for detected objects based on distance and danger level
- */
+
 public class TTSWarning {
     private static final String TAG = "TTSWarning";
 
-    // ==========================================
-    // CONSTANTS - Có thể tùy chỉnh
-    // ==========================================
-    private static final long SPEAK_INTERVAL = 3000; // 3 giây giữa các cảnh báo
+
+    private static final long SPEAK_INTERVAL = 5000; // 3 giây giữa các cảnh báo
     private static final float MAX_WARNING_DISTANCE = 5.0f; // Cảnh báo khi < 5m
     private static final float DANGER_DISTANCE = 2.0f; // Nguy hiểm khi < 2m
 
-    // Danh sách vật thể nguy hiểm
+
     private static final List<String> DANGEROUS_OBJECTS = Arrays.asList(
             "car", "truck", "bus", "motorcycle", "bicycle",
-            "person", "dog", "cat", "chair", "bench"
+            "person", "pedestrian crossing sign", "electric pole", "tree"
     );
 
-    // ==========================================
-    // SINGLETON PATTERN
-    // ==========================================
+
     private static TTSWarning instance;
 
     public static TTSWarning getInstance(Context context) {
@@ -44,21 +37,17 @@ public class TTSWarning {
         return instance;
     }
 
-    // ==========================================
-    // INSTANCE VARIABLES
-    // ==========================================
+
     private TextToSpeech tts;
     private boolean ready = false;
     private long lastSpeakTime = 0;
     private boolean enabled = true;
 
-    // ==========================================
-    // CONSTRUCTOR
-    // ==========================================
+
     private TTSWarning(Context context) {
         tts = new TextToSpeech(context, status -> {
             if (status == TextToSpeech.SUCCESS) {
-                // Thử tiếng Việt trước
+
                 int result = tts.setLanguage(new Locale("vi", "VN"));
 
                 if (result == TextToSpeech.LANG_MISSING_DATA ||
@@ -75,14 +64,8 @@ public class TTSWarning {
         });
     }
 
-    // ==========================================
-    // PUBLIC API - Method chính để gọi từ MainActivity
-    // ==========================================
 
-    /**
-     * ★ METHOD CHÍNH - GỌI METHOD NÀY TỪ MAINACTIVITY ★
-     * Xử lý danh sách detection và phát cảnh báo nếu cần
-     */
+
     public void processDetections(List<Detection> detections) {
         if (!ready || !enabled || detections == null || detections.isEmpty()) {
             return;
@@ -104,18 +87,14 @@ public class TTSWarning {
         }
     }
 
-    /**
-     * Dừng phát âm hiện tại
-     */
+
     public void stop() {
         if (tts != null && ready) {
             tts.stop();
         }
     }
 
-    /**
-     * Bật/tắt TTS
-     */
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) {
@@ -123,16 +102,12 @@ public class TTSWarning {
         }
     }
 
-    /**
-     * Kiểm tra TTS có sẵn sàng không
-     */
+
     public boolean isReady() {
         return ready;
     }
 
-    /**
-     * Cleanup khi app đóng
-     */
+
     public void shutdown() {
         if (tts != null) {
             tts.stop();
@@ -141,9 +116,7 @@ public class TTSWarning {
         }
     }
 
-    // ==========================================
-    // PRIVATE METHODS - Logic nội bộ
-    // ==========================================
+
 
     /**
      * Tìm object cần cảnh báo với ưu tiên:
@@ -223,15 +196,12 @@ public class TTSWarning {
 
         // Người và động vật
         if (lower.contains("person")) return "Người";
-        if (lower.contains("dog")) return "Chó";
-        if (lower.contains("cat")) return "Mèo";
 
         // Đồ vật
-        if (lower.contains("chair")) return "Ghế";
-        if (lower.contains("bench")) return "Ghế dài";
-        if (lower.contains("table")) return "Bàn";
-        if (lower.contains("door")) return "Cửa";
-        if (lower.contains("window")) return "Cửa sổ";
+        if (lower.contains("tree")) return "Cây";
+        if (lower.contains("electric pole")) return "Cột điện";
+        if (lower.contains("pedestrian crossing sign")) return "Biển báo";
+
 
         // Mặc định
         return label;
@@ -246,10 +216,6 @@ public class TTSWarning {
             Log.d(TAG, "Speaking: " + message);
         }
     }
-
-    // ==========================================
-    // INNER CLASS - Detection data structure
-    // ==========================================
 
     /**
      * Cấu trúc dữ liệu detection đơn giản
