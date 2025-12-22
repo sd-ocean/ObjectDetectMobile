@@ -1,15 +1,20 @@
 package vn.edu.usth.objectdetectmobile;
 
 import android.content.Context;
+import android.os.Environment;
 
 import androidx.annotation.NonNull;
 import android.util.Log;
 
+import java.io.File;
+import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+
+import vn.edu.usth.objectdetectmobile.MainActivity.EnvMode;
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OnnxValue;
@@ -24,7 +29,10 @@ import ai.onnxruntime.OrtSession;
  */
 public class DepthEstimator implements AutoCloseable {
     private static final String TAG = "DepthEstimator";
-    private static final String MODEL_NAME = "depth_anything_v2_metric_hypersim_vits.onnx";
+    private static final String INDOOR_MODEL_ASSET = "depth_anything_v2_metric_hypersim_vits.onnx";
+    private static final String INDOOR_MODEL_DOWNLOAD = "depth_anything_v2_metric_hypersim_vits_fp16.onnx";
+    private static final String OUTDOOR_MODEL_ASSET = "depth_anything_v2_metric_vkitti_vits.onnx";
+    private static final String OUTDOOR_MODEL_DOWNLOAD = "depth_anything_v2_metric_vkitti_vits_fp16.onnx";
     private static final boolean LOG_RAW_DEPTH = true;
 
     public static class DepthMap {
@@ -87,9 +95,65 @@ public class DepthEstimator implements AutoCloseable {
     private final float[] std = {0.229f, 0.224f, 0.225f};
 
     public DepthEstimator(@NonNull Context ctx) throws OrtException {
+        this(ctx, EnvMode.INDOOR);
+    }
+
+    public DepthEstimator(@NonNull Context ctx, EnvMode mode) throws OrtException {
         env = OrtEnvironment.getEnvironment();
-        modelPath = ObjectDetector.Util.cacheAsset(ctx, MODEL_NAME);
+        modelPath = resolveModelPath(ctx, mode);
         sessionOptions = new OrtSession.SessionOptions();
+    }
+
+    public static boolean isModelAvailable(@NonNull Context ctx, EnvMode mode) {
+        // Prefer downloaded fp16 model, fallback to bundled asset.
+        for (String name : getCandidateNames(mode)) {
+            File f = getDownloadFile(ctx, name);
+            if (f != null && f.exists() && f.length() > 0) {
+                return true;
+            }
+        }
+        for (String name : getCandidateNames(mode)) {
+            if (assetExists(ctx, name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String resolveModelPath(Context ctx, EnvMode mode) {
+        for (String name : getCandidateNames(mode)) {
+            File f = getDownloadFile(ctx, name);
+            if (f != null && f.exists() && f.length() > 0) {
+                return f.getAbsolutePath();
+            }
+        }
+        for (String name : getCandidateNames(mode)) {
+            if (assetExists(ctx, name)) {
+                return ObjectDetector.Util.cacheAsset(ctx, name);
+            }
+        }
+        throw new IllegalStateException("Depth model not found for mode: " + mode);
+    }
+
+    private static String[] getCandidateNames(EnvMode mode) {
+        if (mode == EnvMode.OUTDOOR) {
+            return new String[]{OUTDOOR_MODEL_DOWNLOAD, OUTDOOR_MODEL_ASSET};
+        }
+        return new String[]{INDOOR_MODEL_DOWNLOAD, INDOOR_MODEL_ASSET};
+    }
+
+    private static File getDownloadFile(Context ctx, String fileName) {
+        File dir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (dir == null) return null;
+        return new File(dir, fileName);
+    }
+
+    private static boolean assetExists(Context ctx, String assetName) {
+        try (InputStream ignored = ctx.getAssets().open(assetName)) {
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public List<ObjectDetector.Detection> attachDepth(List<ObjectDetector.Detection> dets,
