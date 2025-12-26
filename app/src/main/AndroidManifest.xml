@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.hardware.camera.any" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -17,6 +23,18 @@
         android:theme="@style/Theme.ObjectDetectMobile">
         <activity
             android:name=".Settings"
+            android:exported="false"
+            android:theme="@style/Theme.ObjectDetectMobile" />
+        <activity
+            android:name=".ModelPackage"
+            android:exported="false"
+            android:theme="@style/Theme.ObjectDetectMobile" />
+        <activity
+            android:name=".Instruction"
+            android:exported="false"
+            android:theme="@style/Theme.ObjectDetectMobile" />
+        <activity
+            android:name=".DepthEstimation"
             android:exported="false"
             android:theme="@style/Theme.ObjectDetectMobile" />
         <activity
